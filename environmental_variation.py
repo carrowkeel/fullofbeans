@@ -36,54 +36,31 @@ def migration_network(params, graph):
 	M[range(n), range(n)] = 1 - np.sum(M, axis=1)
 	return M
 
-def initial(params):
+def initial():
+	params = default() ## Here could try to get params from user
 	edges, nodes = generate_graph(params)
 	M = migration_network(params, edges)
-	q = np.zeros([params['repeats'], M.shape[0]])
-	s = np.array([np.full(M.shape[0], params['s']) if params['s_var'] == 0 else np.clip(np.random.normal(loc=params['s'], scale=params['s_var'], size=M.shape[0]), 0, 1) for r in range(0, params['repeats'])])
-	q[:,params['target']] = params['q0']
-	nodes_q = np.insert(nodes, 2, np.maximum(q[0], 0.1), axis=1) if len(nodes) > 0 else np.ndarray([0,3])
-	return {'q': q, 'q_target': params['q0'], 'q_non_target': 0, 'spillover': 0, 'M': M, 's_nodes': s, 'topology': nodes, 'nodes': [nodes_q[nodes_q[:,2] < 0.5], nodes_q[nodes_q[:,2] >= 0.5]]}
+	q = np.zeros(M.shape[0])
+	s = np.full(M.shape[0], params['s']) if params['s_var'] == 0 else np.clip(np.random.normal(loc=params['s'], scale=params['s_var'], size=M.shape[0]), 0, 1)
+	q[params['target']] = params['q0']
+	##nodes_q = np.insert(nodes, 2, np.maximum(q, 0.1), axis=1) if len(nodes) > 0 else np.ndarray([0,3])
+	return {'params': params, 'q': q, 'M': M, 's_nodes': s, 'topology': nodes}
 
-def step(params, _step, t):
-	if t == 0:
-		return initial(params)
-	M = np.array(_step['M']) ## Migration network, generated in first step by "initial"
-	s = np.array(_step['s_nodes'])
+def step(last_step):
+	if not last_step:
+		return initial()
+	params = last_step['params']
+	q = np.array(last_step['q'])
+	M = np.array(last_step['M']) ## Migration network, generated in first step by "initial"
+	s = np.array(last_step['s_nodes'])
 	c = params['c']
 	h = params['h']
 	s_c = (1 - s) * c
 	s_n = 0.5 * (1 - h * s) * (1 - c)
-	q_tilde = np.array([np.dot(np.array(_step['q'][i]), M) for i in range(0, params['repeats'])])
+	q_tilde = np.dot(q, M)
 	w_bar = q_tilde**2 * (1 - s) + 2 * q_tilde * (1 - q_tilde) * (s_c + 2 * s_n) + (1 - q_tilde)**2
 	q_tag = (q_tilde**2 * (1 - s) + 2 * q_tilde * (1 - q_tilde) * (s_c + s_n)) / w_bar
-	nodes_q = np.insert(_step['topology'], 2, np.maximum(q_tag[0], 0.1), axis=1) if len(_step['topology']) > 0 else np.ndarray([0,3])
-	return {'q': q_tag, 'q_target': np.mean(q_tag[:,params['target']]), 'q_non_target': (np.mean(np.sum(q_tag, axis=1)) - np.mean(q_tag[:,params['target']])) / (M.shape[0] - 1), 'spillover': np.mean([len(q_i[q_i >= 0.5]) / M.shape[0] for q_i in q_tag]), 'M': M, 's_nodes': s, 'topology': _step['topology'], 'nodes': [nodes_q[nodes_q[:,2] < 0.5], nodes_q[nodes_q[:,2] >= 0.5]]}
-
-def determine_outcome(params, last_step):
-	target_q = last_step['q_target']
-	non_target = last_step['q_non_target']
-	M = np.array(last_step['M'])
-	threshold = 0.5
-	if target_q >= threshold and last_step['spillover'] <= 0:
-		return 'Differential targeting'
-	elif target_q < threshold and non_target < threshold:
-		return 'Failure'
-	else:
-		return 'Spillover'
-
-def result(params, last_step):
-	outcome = determine_outcome(params, last_step)
-	return {'outcome': outcome}
-
-def single_run(params):
-	last_step = None
-	for t in range(0, params['target_steps'] + 1):
-		last_step = step(params, last_step, t)
-		if not last_step:
-			break
-	return result(params, last_step)
-
-def run(params, **kwargs):
-	return single_run(params)
+	##nodes_q = np.insert(last_step['topology'], 2, np.maximum(q_tag, 0.1), axis=1) if len(last_step['topology']) > 0 else np.ndarray([0,3])
+	##spillover = len(q_i[q_i >= 0.5]) / M.shape[0]
+	return {'params': params, 'q': q_tag, 'M': M, 's_nodes': s, 'topology': last_step['topology']}
 
