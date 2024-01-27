@@ -62,5 +62,11 @@ def step(last_step):
 	q_tag = (q_tilde**2 * (1 - s) + 2 * q_tilde * (1 - q_tilde) * (s_c + s_n)) / w_bar
 	##nodes_q = np.insert(last_step['topology'], 2, np.maximum(q_tag, 0.1), axis=1) if len(last_step['topology']) > 0 else np.ndarray([0,3])
 	##spillover = len(q_i[q_i >= 0.5]) / M.shape[0]
+	js.draw('q', 'line', q_tag)
 	return {'params': params, 'q': q_tag, 'M': M, 's_nodes': s, 'topology': last_step['topology']}
 
+def run():
+	last_step = None
+	for i in range(0, 10):
+		last_step = step(last_step)
+	return
