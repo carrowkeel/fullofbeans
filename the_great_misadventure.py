@@ -1,4 +1,4 @@
-# Der Speigel im Spiegel
+# Der Spiegel im Spiegel
 
 def initial():
 	name = interact.form(['name'])
