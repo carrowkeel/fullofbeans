@@ -11,6 +11,7 @@ def defaults():
 		's_var': 0,
 		'grid_size': 21,
 		'repeats': 1,
+		'target': 0,
 		'target_steps': 100
 	}
 
@@ -37,7 +38,7 @@ def migration_network(params, graph):
 	return M
 
 def initial():
-	params = default() ## Here could try to get params from user
+	params = defaults() ## Here could try to get params from user
 	edges, nodes = generate_graph(params)
 	M = migration_network(params, edges)
 	q = np.zeros(M.shape[0])
@@ -65,8 +66,8 @@ def step(last_step):
 	js.draw('q', 'line', q_tag)
 	return {'params': params, 'q': q_tag, 'M': M, 's_nodes': s, 'topology': last_step['topology']}
 
-def run():
+async def run():
 	last_step = None
 	for i in range(0, 10):
 		last_step = step(last_step)
-	return
+	return True
