@@ -1,4 +1,5 @@
 import numpy as np
+from time import sleep
 
 def defaults():
 	return {
@@ -11,7 +12,7 @@ def defaults():
 		's_var': 0,
 		'grid_size': 21,
 		'repeats': 1,
-		'target': 0,
+		'target': 30,
 		'target_steps': 100
 	}
 
@@ -61,13 +62,14 @@ def step(last_step):
 	q_tilde = np.dot(q, M)
 	w_bar = q_tilde**2 * (1 - s) + 2 * q_tilde * (1 - q_tilde) * (s_c + 2 * s_n) + (1 - q_tilde)**2
 	q_tag = (q_tilde**2 * (1 - s) + 2 * q_tilde * (1 - q_tilde) * (s_c + s_n)) / w_bar
-	##nodes_q = np.insert(last_step['topology'], 2, np.maximum(q_tag, 0.1), axis=1) if len(last_step['topology']) > 0 else np.ndarray([0,3])
+	nodes_q = np.insert(last_step['topology'], 2, np.maximum(q_tag, 0.1), axis=1) if len(last_step['topology']) > 0 else np.ndarray([0,3])
 	##spillover = len(q_i[q_i >= 0.5]) / M.shape[0]
-	js.draw('q', 'line', q_tag)
+	js.draw('q', 'scatter_rt', [[nodes_q]])
+	sleep(0.01)
 	return {'params': params, 'q': q_tag, 'M': M, 's_nodes': s, 'topology': last_step['topology']}
 
 async def run():
 	last_step = None
-	for i in range(0, 10):
+	for i in range(0, 1000):
 		last_step = step(last_step)
 	return True
