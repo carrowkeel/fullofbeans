@@ -4,16 +4,16 @@ from time import sleep
 def defaults():
 	return {
 		's': 0.5,
-		'c': 0.8,
+		'c': 1,
 		'h': 0.5,
 		'q0': 0.8,
 		'm': 0.01,
 		'm_inf': 0,
-		's_var': 0,
+		's_var': 0.4,
 		'grid_size': 21,
 		'repeats': 1,
-		'target': 30,
-		'target_steps': 100
+		'target': 221,
+		'target_steps': 200
 	}
 
 def generate_graph_from_grid(n):
@@ -48,10 +48,12 @@ def initial():
 	##nodes_q = np.insert(nodes, 2, np.maximum(q, 0.1), axis=1) if len(nodes) > 0 else np.ndarray([0,3])
 	return {'params': params, 'q': q, 'M': M, 's_nodes': s, 'topology': nodes}
 
-def step(last_step):
+def step(last_step, t):
 	if not last_step:
 		return initial()
 	params = last_step['params']
+	if params['target_steps'] == t:
+		return False
 	q = np.array(last_step['q'])
 	M = np.array(last_step['M']) ## Migration network, generated in first step by "initial"
 	s = np.array(last_step['s_nodes'])
@@ -63,13 +65,17 @@ def step(last_step):
 	w_bar = q_tilde**2 * (1 - s) + 2 * q_tilde * (1 - q_tilde) * (s_c + 2 * s_n) + (1 - q_tilde)**2
 	q_tag = (q_tilde**2 * (1 - s) + 2 * q_tilde * (1 - q_tilde) * (s_c + s_n)) / w_bar
 	nodes_q = np.insert(last_step['topology'], 2, np.maximum(q_tag, 0.1), axis=1) if len(last_step['topology']) > 0 else np.ndarray([0,3])
-	##spillover = len(q_i[q_i >= 0.5]) / M.shape[0]
-	js.draw('q', 'scatter_rt', [[nodes_q]])
+	spillover_prev = len(q[q >= 0.5]) / M.shape[0]
+	spillover = len(q_tag[q_tag >= 0.5]) / M.shape[0]
+	js.draw('q_spatial', 'scatter_rt', [[nodes_q]])
+	js.draw('spillover', 'line_plot_x', [[[t / params['target_steps'], spillover_prev]],[[(t + 1) / params['target_steps'], spillover]]])
 	sleep(0.01)
 	return {'params': params, 'q': q_tag, 'M': M, 's_nodes': s, 'topology': last_step['topology']}
 
 async def run():
 	last_step = None
-	for i in range(0, 1000):
-		last_step = step(last_step)
+	t = 0
+	while last_step != False:
+		last_step = step(last_step, t)
+		t += 1
 	return True
