@@ -1,3 +1,6 @@
+# This test model was designed to test your patience
+# I am here to reassure you that this is real
+
 import numpy as np
 from time import sleep
 
