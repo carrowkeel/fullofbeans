@@ -1,4 +1,4 @@
-# Der Spiegel im Spiegel
+# The idea of this model is to demonstrate world-building capacities beyond text
 
 def initial():
 	name = interact.form(['name'])
