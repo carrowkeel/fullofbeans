@@ -10,4 +10,5 @@ async def run():
 		direction = np.array(directions[arrow]) * 0.05
 		pos = pos + direction
 		await js.store('mypos', {'position': pos.tolist()})
+		js.draw('ind', 'clear')
 		js.draw('ind', 'scatter_rt', [[[[*pos,1]]]])
